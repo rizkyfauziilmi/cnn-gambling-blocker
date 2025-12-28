@@ -2,9 +2,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-def get_logger(
-    name: str, log_file: str = "app.log", level: int = logging.INFO
-) -> logging.Logger:
+def get_logger(name: str, log_file: str = "app.log", level: int = logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
 
     # Hindari duplicate handler
@@ -13,9 +11,7 @@ def get_logger(
 
     logger.setLevel(level)
 
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Console handler
     console_handler = logging.StreamHandler()

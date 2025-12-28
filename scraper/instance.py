@@ -8,7 +8,6 @@ from logger_pkg.logger import get_logger
 
 
 # TODO: handle dimmed backgrounds, consent popups
-# TODO: only wait until above-the-fold is loaded
 class Scraper:
     def __init__(self, log_level: int = INFO) -> None:
         self.logger = get_logger(name=self.__class__.__name__, level=log_level)
@@ -67,8 +66,8 @@ class Scraper:
         self.logger.debug(f"Normalized URL: {url}")
 
         self.logger.info("Navigating pages")
-        mobile_page.goto(url)
-        desktop_page.goto(url)
+        mobile_page.goto(url, wait_until="domcontentloaded")
+        desktop_page.goto(url, wait_until="domcontentloaded")
 
         self.logger.info("Removing overlays from pages")
         self._remove_overlays(mobile_page)
@@ -105,8 +104,8 @@ class Scraper:
         self.logger.debug(f"Normalized URL: {url}")
 
         self.logger.info("Navigating pages")
-        mobile_page.goto(url)
-        desktop_page.goto(url)
+        mobile_page.goto(url, wait_until="domcontentloaded")
+        desktop_page.goto(url, wait_until="domcontentloaded")
 
         self.logger.info("Removing overlays from pages")
         self._remove_overlays(mobile_page)
