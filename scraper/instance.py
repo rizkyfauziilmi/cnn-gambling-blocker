@@ -7,7 +7,6 @@ from libs.url import get_domain, is_accessible_html
 from logger_pkg.logger import get_logger
 
 
-# TODO: handle dimmed backgrounds, consent popups
 class Scraper:
     def __init__(self, log_level: int = INFO) -> None:
         self.logger = get_logger(name=self.__class__.__name__, level=log_level)
