@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "playwright>=1.57.0",
+    "requests>=2.32.5",
+    "tqdm>=4.67.1",
+]
 
 [dependency-groups]
 dev = [
@@ -13,7 +17,7 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py312"
 # Exclude a variety of commonly ignored directories.
 exclude = [
