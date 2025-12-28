@@ -1,4 +1,4 @@
-.PHONY: lint format fix commit help
+.PHONY: lint format fix add commit scraper-dataset help
 
 help:
 	@echo "Available commands:"
@@ -7,6 +7,8 @@ help:
 	@echo "  make fix     - Auto-fix linting issues"
 	@echo "  make add     - Stage all changes for commit"
 	@echo "  make commit  - Interactive commit with commitizen"
+	@echo "  make scraper-dataset - Run the scraper to generate dataset"
+	@echo "  make help    - Show this help message"
 
 lint:
 	uv run ruff check .
@@ -18,3 +20,5 @@ add:
 	git add .
 commit:
 	uv run cz commit
+scraper-dataset:
+	uv run python -m scraper.scrape
