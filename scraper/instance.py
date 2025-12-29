@@ -1,154 +1,221 @@
 import os
 from logging import INFO
 
-from playwright.sync_api import sync_playwright
+from playwright.async_api import (
+    Browser,
+    BrowserContext,
+    Page,
+    Playwright,
+    async_playwright,
+)
 
-from libs.url import get_domain, is_accessible_html
-from logger_pkg.logger import get_logger
+from utils.logger import get_logger
+from utils.url import get_domain, is_accessible_html
 
 
 class Scraper:
     def __init__(self, log_level: int = INFO) -> None:
-        self.logger = get_logger(name=self.__class__.__name__, level=log_level)
+        # Avoid heavy work in __init__; use create() to initialize
+        self.logger = get_logger(self.__class__.__name__, level=log_level)
+        self.playwright: Playwright = None
+        self.browser: Browser = None
+        self.mobile_context: BrowserContext = None
+        self.desktop_context: BrowserContext = None
 
+    @classmethod
+    async def create(cls, log_level: int = INFO) -> "Scraper":
+        self = cls(log_level=log_level)
         self.logger.info("Starting Playwright")
-        self.playwright = sync_playwright().start()
+        self.playwright = await async_playwright().start()
 
-        self.logger.info("Launching Chromium browser (headless)")
-        self.browser = self.playwright.chromium.launch(headless=True)
+        self.logger.info("Launching Chromium browser")
+        self.browser = await self.playwright.chromium.launch(
+            headless=True,
+        )
 
-        self.logger.info("Creating mobile and desktop contexts")
-        self.mobile_context = self.browser.new_context(**self.playwright.devices["Galaxy S24"])
-        self.desktop_context = self.browser.new_context(**self.playwright.devices["Desktop Chrome HiDPI"])
+        self.logger.info("Creating browser contexts")
+        self.mobile_context = await self.browser.new_context(
+            **self.playwright.devices["Galaxy S24"],
+        )
+        self.desktop_context = await self.browser.new_context(
+            **self.playwright.devices["Desktop Chrome HiDPI"],
+        )
+        return self
 
-    def _handle_dialog(self, dialog) -> None:
-        """Handle browser dialogs (alerts, confirms, prompts)"""
-        self.logger.info(f"Dialog detected: {dialog.type} - {dialog.message}")
-        dialog.accept()
-
-    def _remove_overlays(self, page) -> None:
-        """Remove common overlays and popups from the page"""
+    async def _handle_dialog(self, dialog) -> None:
+        self.logger.debug(
+            "Dialog detected: type=%s message=%s",
+            dialog.type,
+            dialog.message,
+        )
         try:
-            overlay_selectors = [
-                "[role='dialog']",
-                ".modal",
-                ".popup",
-                ".overlay",
-                ".advertisement",
-                "[class*='cookie']",
-                "[class*='consent']",
-                "[class*='banner']",
-            ]
-            for selector in overlay_selectors:
-                try:
-                    page.locator(selector).evaluate_all("els => els.forEach(el => el.remove())")
-                except Exception:
-                    continue
-            self.logger.debug("Overlays removed")
+            await dialog.accept()
         except Exception as e:
-            self.logger.warning(f"Could not remove overlays: {e}")
+            self.logger.debug(f"Failed to accept dialog: {e}")
 
-    def _remove_dimmed_background(self, page) -> None:
-        """Remove dimmed background overlays based on CSS properties"""
+    async def _remove_overlays(self, page: Page, url: str) -> None:
+        """Remove common overlay elements like modals and pop-ups using MutationObserver."""  # noqa: E501
+        overlay_selectors = [
+            'div[class*="modal" i]',
+            'div[class*="popup" i]',
+            'div[class*="pop-up" i]',
+            'div[class*="dialog" i]',
+            'div[class*="bg-black" i]',
+            'div[id*="dialog" i]',
+            'div[id*="modal" i]',
+            'div[id*="popup" i]',
+            'div[id*="pop-up" i]',
+            'div[id*="bg-black" i]',
+            # ARIA roles
+            'div[role="dialog"]',
+            'div[role="alertdialog"]',
+            'div[role="presentation"]',
+            # Data attributes
+            "div[data-modal]",
+            "div[data-dialog]",
+        ]
+        selectors_str = ", ".join(overlay_selectors)
+
         try:
-            page.locator("body *").evaluate_all(
-                """
-                els => els.forEach(el => {
-                    const style = window.getComputedStyle(el);
-                    const isBg = style.position === 'fixed' &&
-                                 style.zIndex >= 1000 &&
-                                 (style.backgroundColor.includes('rgba(0, 0, 0,') ||
-                                  style.backgroundColor === 'rgb(0, 0, 0)');
-                    if (isBg) el.remove();
-                })
-                """
+            await page.evaluate(
+                f"""
+                () => {{
+                    const removeOverlays = () => {{
+                        const selectors = ['{selectors_str.replace("'", "\\'")}'];
+                        selectors.forEach(selector => {{
+                            document.querySelectorAll(selector).forEach(el => {{
+                                el.remove();
+                            }});
+                        }});
+                        // Remove based on z-index
+                        document.querySelectorAll('div[style*="z-index"]').forEach(el => {{
+                            const zIndex = window.getComputedStyle(el).zIndex;
+                            const classList = el.className.toLowerCase();
+                            const isNavbar = /navbar|header|menu|nav/.test(classList);
+                            if (zIndex && parseInt(zIndex) >= 1000 && !isNavbar) {{
+                                el.remove();
+                            }}
+                        }});
+                    }};
+                    // Debounce helper to avoid running removeOverlays on every mutation
+                    const debounce = (fn, delay) => {{
+                        let timerId;
+                        return (...args) => {{
+                            clearTimeout(timerId);
+                            timerId = setTimeout(() => fn.apply(null, args), delay);
+                        }};
+                    }};
+                    const debouncedRemoveOverlays = debounce(removeOverlays, 200);
+                    // Initial removal
+                    removeOverlays();
+                    // Watch for dynamically added overlays
+                    const observer = new MutationObserver(() => {{
+                        debouncedRemoveOverlays();
+                    }});
+                    observer.observe(document.body, {{
+                        childList: true,
+                        subtree: true,
+                    }});
+                }}
+                """  # noqa: E501
             )
-            self.logger.debug("Dimmed backgrounds removed")
+            self.logger.debug(
+                f"[{url}] MutationObserver set up for dynamic overlay removal"
+            )
         except Exception as e:
-            self.logger.warning(f"Could not remove dimmed backgrounds: {e}")
+            self.logger.warning(
+                f"[{url}] Error setting up MutationObserver for overlays: {e}"
+            )
 
-    def scrape_into_dataset(self, extra_path: str, url: str) -> None:
-        self.logger.info(f"Scraping into dataset: {url}")
+    async def _prepare_page_for_screenshot(self, page: Page, url: str) -> None:
+        page.on("dialog", self._handle_dialog)
+        try:
+            await page.goto(url=url, wait_until="networkidle", timeout=30_000)
+        except Exception as e:
+            self.logger.warning(f"[{url}] Failed to navigate to page: {e}")
+        await self._remove_overlays(page, url)
 
-        mobile_page = self.mobile_context.new_page()
-        desktop_page = self.desktop_context.new_page()
+    async def scrape_into_dataset(self, extra_path: str, url: str) -> None:
+        url_normalized, domain = get_domain(url)
+        save_dir = f"datasets/{extra_path}"
+        mobile_path = f"{save_dir}/{domain}_mobile.png"
+        desktop_path = f"{save_dir}/{domain}_desktop.png"
 
-        mobile_page.on("dialog", self._handle_dialog)
-        desktop_page.on("dialog", self._handle_dialog)
+        if os.path.exists(mobile_path) and os.path.exists(desktop_path):
+            self.logger.info(
+                "[%s] Skipping scrape (already exists): %s",
+                url_normalized,
+                domain,
+            )
+            return
 
-        if not is_accessible_html(url):
-            self.logger.error(f"URL not accessible or not HTML: {url}")
-            raise ValueError("The provided URL is not accessible or does not return HTML content.")
+        self.logger.info("[%s] Starting scrape", url_normalized)
 
-        url, domain = get_domain(url)
-        self.logger.debug(f"Normalized URL: {url}")
+        if not is_accessible_html(url_normalized):
+            self.logger.error("[%s] URL not accessible or not HTML", url_normalized)
+            raise ValueError(f"URL not accessible: {url_normalized}")
 
-        self.logger.info("Navigating pages")
-        mobile_page.goto(url, wait_until="domcontentloaded")
-        desktop_page.goto(url, wait_until="domcontentloaded")
+        mobile_page = await self.mobile_context.new_page()
+        desktop_page = await self.desktop_context.new_page()
 
-        self.logger.info("Removing overlays and dimmed backgrounds from pages")
-        self._remove_overlays(mobile_page)
-        self._remove_overlays(desktop_page)
-        self._remove_dimmed_background(mobile_page)
-        self._remove_dimmed_background(desktop_page)
+        try:
+            self.logger.debug("[%s] Preparing mobile page", url_normalized)
+            await self._prepare_page_for_screenshot(mobile_page, url_normalized)
+            self.logger.debug("[%s] Preparing desktop page", url_normalized)
+            await self._prepare_page_for_screenshot(desktop_page, url_normalized)
 
-        save_path = f"datasets/{extra_path}"
-        os.makedirs(save_path, exist_ok=True)
-        self.logger.info(f"Saving screenshots to {save_path}")
+            os.makedirs(save_dir, exist_ok=True)
+            self.logger.debug("[%s] Taking mobile screenshot", url_normalized)
+            await mobile_page.screenshot(path=mobile_path)
+            self.logger.debug("[%s] Taking desktop screenshot", url_normalized)
+            await desktop_page.screenshot(path=desktop_path)
 
-        mobile_path = f"{save_path}/{domain}_mobile.png"
-        desktop_path = f"{save_path}/{domain}_desktop.png"
+            self.logger.info(
+                "[%s] Screenshots saved: %s, %s",
+                url,
+                mobile_path,
+                desktop_path,
+            )
+        finally:
+            await mobile_page.close()
+            await desktop_page.close()
 
-        mobile_page.screenshot(path=mobile_path)
-        desktop_page.screenshot(path=desktop_path)
-        self.logger.info(f"Screenshots saved: {mobile_path}, {desktop_path}")
+    async def scrape_into_bytes(self, url: str) -> tuple[bytes, bytes]:
+        url_normalized, domain = get_domain(url)
 
-        mobile_page.close()
-        desktop_page.close()
+        self.logger.info("[%s] Starting scrape into bytes", url_normalized)
 
-    def scrape_into_bytes(self, url: str) -> tuple[bytes, bytes]:
-        self.logger.info(f"Scraping into bytes: {url}")
+        if not is_accessible_html(url_normalized):
+            self.logger.error("[%s] URL not accessible or not HTML", url_normalized)
+            raise ValueError(f"URL not accessible: {url_normalized}")
 
-        mobile_page = self.mobile_context.new_page()
-        desktop_page = self.desktop_context.new_page()
+        mobile_page = await self.mobile_context.new_page()
+        desktop_page = await self.desktop_context.new_page()
 
-        mobile_page.on("dialog", self._handle_dialog)
-        desktop_page.on("dialog", self._handle_dialog)
+        try:
+            self.logger.debug("[%s] Preparing mobile page", url_normalized)
+            await self._prepare_page_for_screenshot(mobile_page, url_normalized)
+            self.logger.debug("[%s] Preparing desktop page", url_normalized)
+            await self._prepare_page_for_screenshot(desktop_page, url_normalized)
 
-        if not is_accessible_html(url):
-            self.logger.error(f"URL not accessible or not HTML: {url}")
-            raise ValueError("The provided URL is not accessible or does not return HTML content.")
+            self.logger.debug("[%s] Taking mobile screenshot", url_normalized)
+            mobile_bytes = await mobile_page.screenshot()
+            self.logger.debug("[%s] Taking desktop screenshot", url_normalized)
+            desktop_bytes = await desktop_page.screenshot()
 
-        url, _ = get_domain(url)
-        self.logger.debug(f"Normalized URL: {url}")
+            self.logger.info(
+                "[%s] Screenshots captured in bytes for domain: %s",
+                url,
+                domain,
+            )
+            return mobile_bytes, desktop_bytes
+        finally:
+            await mobile_page.close()
+            await desktop_page.close()
 
-        self.logger.info("Navigating pages")
-        mobile_page.goto(url, wait_until="domcontentloaded")
-        desktop_page.goto(url, wait_until="domcontentloaded")
-
-        self.logger.info("Removing overlays and dimmed backgrounds from pages")
-        self._remove_overlays(mobile_page)
-        self._remove_overlays(desktop_page)
-        self._remove_dimmed_background(mobile_page)
-        self._remove_dimmed_background(desktop_page)
-
-        self.logger.info("Taking screenshots as bytes")
-        mobile_screenshot = mobile_page.screenshot()
-        desktop_screenshot = desktop_page.screenshot()
-        self.logger.info("Screenshots captured successfully")
-
-        mobile_page.close()
-        desktop_page.close()
-
-        return mobile_screenshot, desktop_screenshot
-
-    def _remove_instance(self):
-        self.logger.info("Closing browser contexts and Playwright")
-        self.mobile_context.close()
-        self.desktop_context.close()
-        self.browser.close()
-        self.playwright.stop()
-
-    def close(self):
-        self._remove_instance()
+    async def close(self):
+        self.logger.info("Shutting down scraper")
+        await self.mobile_context.close()
+        await self.desktop_context.close()
+        await self.browser.close()
+        await self.playwright.stop()

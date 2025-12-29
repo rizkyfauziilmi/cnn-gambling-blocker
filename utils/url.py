@@ -28,8 +28,8 @@ def is_accessible_html(url: str) -> bool:
     import requests
 
     try:
-        response = requests.get(url=url, allow_redirects=True)
-        response.raise_for_status()  # checks 2xx status
+        response = requests.get(url=url)
+        response.raise_for_status()
 
         content_type = response.headers.get("Content-Type", "").lower()
 
