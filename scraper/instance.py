@@ -21,6 +21,7 @@ class Scraper:
         self.browser: Browser | None = None
         self.mobile_context: BrowserContext | None = None
         self.desktop_context: BrowserContext | None = None
+        self.pages: list[Page] = []
 
     @classmethod
     async def create(cls, log_level: int = INFO) -> "Scraper":
@@ -40,6 +41,7 @@ class Scraper:
         self.desktop_context = await self.browser.new_context(
             **self.playwright.devices["Desktop Chrome HiDPI"],
         )
+        self.logger.info("Scraper initialized successfully")
         return self
 
     async def _handle_dialog(self, dialog) -> None:
@@ -161,6 +163,7 @@ class Scraper:
 
         mobile_page = await self.mobile_context.new_page()
         desktop_page = await self.desktop_context.new_page()
+        self.pages.extend([mobile_page, desktop_page])
 
         try:
             self.logger.debug("[%s] Preparing mobile page", url_normalized)
@@ -181,8 +184,11 @@ class Scraper:
                 desktop_path,
             )
         finally:
-            await mobile_page.close()
-            await desktop_page.close()
+            if not mobile_page.is_closed():
+                await mobile_page.close()
+            if not desktop_page.is_closed():
+                await desktop_page.close()
+            self.pages = [page for page in self.pages if not page.is_closed()]
 
     async def scrape_into_bytes(self, url: str) -> tuple[bytes, bytes]:
         url_normalized, domain = get_domain(url)
@@ -218,10 +224,19 @@ class Scraper:
             )
             return mobile_bytes, desktop_bytes
         finally:
-            await mobile_page.close()
-            await desktop_page.close()
+            if not mobile_page.is_closed():
+                await mobile_page.close()
+            if not desktop_page.is_closed():
+                await desktop_page.close()
+            self.pages = [page for page in self.pages if not page.is_closed()]
 
     async def close(self):
+        self.logger.info("Closing all pages")
+        for page in self.pages:
+            if not page.is_closed():
+                await page.close()
+        self.pages.clear()
+
         self.logger.info("Shutting down scraper")
         if self.mobile_context:
             await self.mobile_context.close()
