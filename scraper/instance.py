@@ -17,10 +17,10 @@ class Scraper:
     def __init__(self, log_level: int = INFO) -> None:
         # Avoid heavy work in __init__; use create() to initialize
         self.logger = get_logger(self.__class__.__name__, level=log_level)
-        self.playwright: Playwright = None
-        self.browser: Browser = None
-        self.mobile_context: BrowserContext = None
-        self.desktop_context: BrowserContext = None
+        self.playwright: Playwright | None = None
+        self.browser: Browser | None = None
+        self.mobile_context: BrowserContext | None = None
+        self.desktop_context: BrowserContext | None = None
 
     @classmethod
     async def create(cls, log_level: int = INFO) -> "Scraper":
@@ -155,6 +155,10 @@ class Scraper:
             self.logger.error("[%s] URL not accessible or not HTML", url_normalized)
             raise ValueError(f"URL not accessible: {url_normalized}")
 
+        if not self.mobile_context or not self.desktop_context:
+            self.logger.error("Browser contexts are not initialized")
+            raise RuntimeError("Browser contexts are not initialized")
+
         mobile_page = await self.mobile_context.new_page()
         desktop_page = await self.desktop_context.new_page()
 
@@ -189,6 +193,10 @@ class Scraper:
             self.logger.error("[%s] URL not accessible or not HTML", url_normalized)
             raise ValueError(f"URL not accessible: {url_normalized}")
 
+        if not self.mobile_context or not self.desktop_context:
+            self.logger.error("Browser contexts are not initialized")
+            raise RuntimeError("Browser contexts are not initialized")
+
         mobile_page = await self.mobile_context.new_page()
         desktop_page = await self.desktop_context.new_page()
 
@@ -215,7 +223,11 @@ class Scraper:
 
     async def close(self):
         self.logger.info("Shutting down scraper")
-        await self.mobile_context.close()
-        await self.desktop_context.close()
-        await self.browser.close()
-        await self.playwright.stop()
+        if self.mobile_context:
+            await self.mobile_context.close()
+        if self.desktop_context:
+            await self.desktop_context.close()
+        if self.browser:
+            await self.browser.close()
+        if self.playwright:
+            await self.playwright.stop()
