@@ -18,14 +18,16 @@ async def main() -> None:
     # --------------------------------------------------
     # Validate input, check for duplicates (throw error if any)
     # --------------------------------------------------
-    all_sites = NON_GAMBLING_SITES + GAMBLING_SITES
-    if len(all_sites) != len(set(all_sites)):
-        logger.error("Duplicate URLs found in the input site lists")
-        await scraper.close()
-        raise ValueError("Duplicate URLs found in the input site lists")
+    all_list = NON_GAMBLING_SITES + GAMBLING_SITES
+    for site in all_list:
+        count = all_list.count(site)
+        if count > 1:
+            logger.error("Duplicate URLs found: %s site", site)
+            await scraper.close()
+            raise ValueError(f"Duplicate site found: {site} (count={count})")
 
     async def scrape_group(
-        extra_path: str, sites: list[str], desc: str, concurrency: int = 5
+        extra_path: str, sites: list[str], desc: str, concurrency: int = 3
     ) -> None:
         logger.info(
             "Starting %s (%d sites)",
