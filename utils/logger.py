@@ -16,9 +16,7 @@ def get_logger(
     if logger.handlers:
         return logger
 
-    formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)-7s | %(name)s | %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s | %(levelname)-7s | %(name)s | %(message)s")
 
     # Console handler
     console_handler = logging.StreamHandler()

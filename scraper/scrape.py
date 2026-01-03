@@ -26,9 +26,7 @@ async def main() -> None:
             await scraper.close()
             raise ValueError(f"Duplicate site found: {site} (count={count})")
 
-    async def scrape_group(
-        extra_path: str, sites: list[str], desc: str, concurrency: int = 3
-    ) -> None:
+    async def scrape_group(extra_path: str, sites: list[str], desc: str, concurrency: int = 3) -> None:
         logger.info(
             "Starting %s (%d sites)",
             desc.lower(),
@@ -53,9 +51,7 @@ async def main() -> None:
         logger.info("Finished %s", desc.lower())
 
     try:
-        await scrape_group(
-            "non_gambling", NON_GAMBLING_SITES, "Scraping non-gambling sites"
-        )
+        await scrape_group("non_gambling", NON_GAMBLING_SITES, "Scraping non-gambling sites")
         await scrape_group("gambling", GAMBLING_SITES, "Scraping gambling sites")
         logger.info("Scraping job completed successfully")
     finally:

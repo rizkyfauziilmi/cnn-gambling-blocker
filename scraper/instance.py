@@ -343,9 +343,7 @@ class Scraper:
         """  # noqa: E501
 
         try:
-            self.logger.debug(
-                f"[{page.url or '<unknown>'}] Waiting for viewport images to load"
-            )
+            self.logger.debug(f"[{page.url or '<unknown>'}] Waiting for viewport images to load")
             await page.evaluate(js_wait_images)
         except Exception as e:
             self.logger.debug(
@@ -354,9 +352,7 @@ class Scraper:
                 e,
             )
         finally:
-            self.logger.debug(
-                f"[{page.url or '<unknown>'}] Wait for viewport images complete"
-            )
+            self.logger.debug(f"[{page.url or '<unknown>'}] Wait for viewport images complete")
 
     async def _prepare_page_for_screenshot(self, page: Page, url: str) -> None:
         page.on("dialog", self._handle_dialog)

@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# txt files
+*.txt
+
 # Data files
 datasets
 
