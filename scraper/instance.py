@@ -364,7 +364,7 @@ class Scraper:
         await self._wait_images_in_viewport(page)
 
     async def scrape_into_dataset(self, extra_path: str, url: str) -> None:
-        _, domain = get_domain(url)
+        domain = get_domain(url)[1]
         save_dir = f"datasets/images/{extra_path}"
         mobile_path = f"{save_dir}/{domain}_mobile.png"
         desktop_path = f"{save_dir}/{domain}_desktop.png"

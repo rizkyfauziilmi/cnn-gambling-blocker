@@ -187,6 +187,6 @@ if __name__ == "__main__":
     logger = get_logger("Format.Dataset", level=INFO)
 
     logger.info("Starting dataset filename formatting...")
-    batch_rename_files("datasets/gambling", logger, remove_subdomains=False)
-    batch_rename_files("datasets/non_gambling", logger, remove_subdomains=False)
+    batch_rename_files("datasets/images/gambling", logger, remove_subdomains=False)
+    batch_rename_files("datasets/images/non_gambling", logger, remove_subdomains=False)
     logger.info("Dataset filename formatting completed.")
