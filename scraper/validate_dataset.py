@@ -1,5 +1,5 @@
 import os
-from logging import Logger
+from logging import INFO, Logger
 
 from utils.logger import get_logger
 from utils.url import get_domain
@@ -43,7 +43,7 @@ def check_unexpected_files(directory: str, expected_files: set[str], logger: Log
 
 
 def main() -> None:
-    logger = get_logger("Validate.Dataset", level="INFO")
+    logger = get_logger("Validate.Dataset", level=INFO)
 
     logger.info("Validating dataset...")
 
@@ -51,15 +51,15 @@ def main() -> None:
     check_duplicates(NON_GAMBLING_SITES + GAMBLING_SITES, logger)
 
     # Check for dataset file existence
-    check_file_existence(GAMBLING_SITES, "datasets/gambling", logger)
-    check_file_existence(NON_GAMBLING_SITES, "datasets/non_gambling", logger)
+    check_file_existence(GAMBLING_SITES, "datasets/images/gambling", logger)
+    check_file_existence(NON_GAMBLING_SITES, "datasets/images/non_gambling", logger)
 
     # Check for unexpected dataset files
     expected_gambling_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
     expected_non_gambling_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
 
-    check_unexpected_files("datasets/gambling", expected_gambling_files, logger)
-    check_unexpected_files("datasets/non_gambling", expected_non_gambling_files, logger)
+    check_unexpected_files("datasets/images/gambling", expected_gambling_files, logger)
+    check_unexpected_files("datasets/images/non_gambling", expected_non_gambling_files, logger)
 
     logger.info(
         f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total files checked: {len(expected_gambling_files) + len(expected_non_gambling_files)}."  # noqa: E501

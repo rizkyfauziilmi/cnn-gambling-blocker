@@ -365,7 +365,7 @@ class Scraper:
 
     async def scrape_into_dataset(self, extra_path: str, url: str) -> None:
         _, domain = get_domain(url)
-        save_dir = f"datasets/{extra_path}"
+        save_dir = f"datasets/images/{extra_path}"
         mobile_path = f"{save_dir}/{domain}_mobile.png"
         desktop_path = f"{save_dir}/{domain}_desktop.png"
 

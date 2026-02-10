@@ -1,8 +1,10 @@
+from logging import INFO
+
 from utils.logger import get_logger
 
 from .constant import GAMBLING_SITES, NON_GAMBLING_SITES
 
-logger = get_logger("Create.TXT.Files", level="INFO")
+logger = get_logger("Create.TXT.Files", level=INFO)
 
 
 logger.info("Creating TXT files for gambling and non-gambling sites...")

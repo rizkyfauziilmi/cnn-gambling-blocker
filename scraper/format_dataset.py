@@ -1,6 +1,6 @@
 import os
 import re
-from logging import Logger
+from logging import INFO, Logger
 
 from scraper.constant import KNOWN_SLDS
 from utils.logger import get_logger
@@ -184,7 +184,7 @@ def batch_rename_files(folder_path: str, logger: Logger, remove_subdomains: bool
 
 
 if __name__ == "__main__":
-    logger = get_logger("Format.Dataset", level="INFO")
+    logger = get_logger("Format.Dataset", level=INFO)
 
     logger.info("Starting dataset filename formatting...")
     batch_rename_files("datasets/gambling", logger, remove_subdomains=False)
