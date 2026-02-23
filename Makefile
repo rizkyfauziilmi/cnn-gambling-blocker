@@ -2,7 +2,7 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  make scraper-dataset - Run the scraper to generate dataset"
+	@echo "  make scrape-dataset - Run the scraper to generate dataset"
 	@echo "  make validate-dataset - Validate the generated dataset"
 	@echo "  make format-dataset   - Format dataset filenames"
 	@echo "  make generate-txt   - Generate dataset text files"
@@ -13,7 +13,7 @@ help:
 	@echo "  make commit  - Interactive commit with commitizen"
 	@echo "  make help    - Show this help message"
 
-scraper-dataset:
+scrape-dataset:
 	uv run python -m scraper.scrape
 validate-dataset:
 	uv run python -m scraper.validate_dataset

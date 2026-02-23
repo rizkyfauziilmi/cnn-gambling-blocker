@@ -34,7 +34,7 @@ class Scraper:
 
         self.logger.info("Launching Chromium browser")
         self.browser = await self.playwright.chromium.launch(
-            headless=True,
+            headless=False,
         )
 
         self.logger.info("Creating browser contexts")
