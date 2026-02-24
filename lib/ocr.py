@@ -36,6 +36,7 @@ class OCR:
         Light cleaning only (important for judi keywords like slot88, 777, 4d, dll)
         """
         text = text.lower()
+        text = re.sub(r"[^a-zA-Z0-9\s]", "", text)  # Remove all symbols and punctuation
         text = re.sub(r"\s+", " ", text)
         return text.strip()
 
