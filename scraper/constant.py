@@ -452,6 +452,7 @@ NON_GAMBLING_SITES = [
     "https://www.bluehost.com",
     "https://www.hostinger.co.id",
     "https://www.hostinger.com",
+    "https://vercel.com",
     # # ___ 🤖 AI & Modern Tech (10) ___
     "https://openai.com",
     "https://www.anthropic.com",
@@ -560,17 +561,17 @@ NON_GAMBLING_SITES = [
     "https://www.prada.com",
     "https://www.rolex.com",
     "https://www.seikowatches.com",
-    # # ___ 📄 Majalah & Publikasi Niche (15) ___
-    "https://nationalgeographic.com",
+    # ___ 📄 Majalah & Publikasi Niche (11) ___
+    "https://www.nationalgeographic.com",
     "https://time.com",
-    "https://economist.com",
+    "https://www.economist.com",
     "https://hbr.org",
-    "https://vogue.com",
-    "https://elle.com",
-    "https://gq.com",
-    "https://cosmopolitan.com",
-    "https://rollingstone.com",
-    "https://billboard.com",
+    "https://www.vogue.com",
+    "https://www.elle.com",
+    "https://www.gq.com",
+    "https://www.cosmopolitan.com",
+    "https://www.rollingstone.com",
+    "https://www.billboard.com",
 ]
 
 GAMBLING_SITES = [
