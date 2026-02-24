@@ -367,7 +367,7 @@ NON_GAMBLING_SITES = [
     "https://bankmega.com",
     "https://www.permatabank.com",
     "https://www.jpmorganchase.com",
-    "http://www.bankofamerica.com",
+    "https://www.bankofamerica.com",
     "https://www.wellsfargo.com",
     "https://www.citi.com",
     "https://www.hsbc.com",
@@ -483,7 +483,7 @@ NON_GAMBLING_SITES = [
     # # ___ ✈️ Maskapai Penerbangan (15) ___
     "https://www.garuda-indonesia.com",
     "https://www.citilink.co.id",
-    "http://www.lionair.co.id",
+    "https://www.lionair.co.id",
     "https://www.airasia.com",
     "https://www.batikair.com",
     "https://www.superairjet.com",
