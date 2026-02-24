@@ -1,6 +1,6 @@
 import asyncio
 import os
-from logging import DEBUG
+from logging import INFO
 
 from tqdm import tqdm
 
@@ -13,13 +13,10 @@ from utils.url import get_domain
 
 
 async def main() -> None:
-    logger = get_logger("Scrape.Main", level=DEBUG)
+    logger = get_logger("Scrape.Main", level=INFO)
 
-    logger.info("Initializing async crawler")
-    crawler = await Crawler.create(log_level=DEBUG)
-
-    logger.info("Initializing OCR")
-    ocr = OCR()
+    crawler = await Crawler.create(log_level=INFO)
+    ocr = OCR(log_level=INFO)
 
     # --------------------------------------------------
     # Validate input, check for duplicates (throw error if any)
@@ -64,12 +61,12 @@ async def main() -> None:
 
                 if not texts_exist:
                     logger.debug("Performing OCR on %s mobile", u)
-                    mobile_text = ocr.read_text(mobile_path)
+                    mobile_text = ocr.read_text(mobile_path, label=extra_path)
                     with open(mobile_text_path, "w", encoding="utf-8") as f:
                         f.write(mobile_text)
 
                     logger.debug("Performing OCR on %s desktop", u)
-                    desktop_text = ocr.read_text(desktop_path)
+                    desktop_text = ocr.read_text(desktop_path, label=extra_path)
                     with open(desktop_text_path, "w", encoding="utf-8") as f:
                         f.write(desktop_text)
 
