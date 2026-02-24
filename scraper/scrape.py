@@ -29,7 +29,7 @@ async def main() -> None:
             await crawler.close()
             raise ValueError(f"Duplicate site found: {site} (count={count})")
 
-    async def scrape_group(extra_path: str, sites: list[str], desc: str, ocr: OCR, concurrency: int = 3) -> None:
+    async def scrape_group(extra_path: str, sites: list[str], desc: str, ocr: OCR, concurrency: int = 3, isGambling: bool = False) -> None:
         logger.info(
             "Starting %s (%d sites)",
             desc.lower(),
@@ -61,12 +61,12 @@ async def main() -> None:
 
                 if not texts_exist:
                     logger.debug("Performing OCR on %s mobile", u)
-                    mobile_text = ocr.read_text(mobile_path, label=extra_path)
+                    mobile_text = ocr.read_text(image_path=mobile_path, label=extra_path, min_conf=0.5 if isGambling else 0.65)
                     with open(mobile_text_path, "w", encoding="utf-8") as f:
                         f.write(mobile_text)
 
                     logger.debug("Performing OCR on %s desktop", u)
-                    desktop_text = ocr.read_text(desktop_path, label=extra_path)
+                    desktop_text = ocr.read_text(image_path=desktop_path, label=extra_path, min_conf=0.5 if isGambling else 0.65)
                     with open(desktop_text_path, "w", encoding="utf-8") as f:
                         f.write(desktop_text)
 
@@ -85,8 +85,8 @@ async def main() -> None:
         logger.info("Finished %s", desc.lower())
 
     try:
-        await scrape_group("non_gambling", NON_GAMBLING_SITES, "Scraping non-gambling sites", ocr)
-        await scrape_group("gambling", GAMBLING_SITES, "Scraping gambling sites", ocr)
+        await scrape_group(extra_path="non_gambling", sites=NON_GAMBLING_SITES, desc="Scraping non-gambling sites", ocr=ocr, isGambling=False)
+        await scrape_group(extra_path="gambling", sites=GAMBLING_SITES, desc="Scraping gambling sites", ocr=ocr, isGambling=True)
         logger.info("Scraping job completed successfully")
     finally:
         await crawler.close()
