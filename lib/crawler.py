@@ -9,11 +9,12 @@ from playwright.async_api import (
     async_playwright,
 )
 
+from constant.path import IMAGE_PATH
 from utils.logger import get_logger
 from utils.url import get_domain
 
 
-class Scraper:
+class Crawler:
     def __init__(self, log_level: int = INFO) -> None:
         # Avoid heavy work in __init__; use create() to initialize
         self.logger = get_logger(self.__class__.__name__, level=log_level)
@@ -24,7 +25,7 @@ class Scraper:
         self.pages: list[Page] = []
 
     @classmethod
-    async def create(cls, log_level: int = INFO) -> "Scraper":
+    async def create(cls, log_level: int = INFO) -> "Crawler":
         self = cls(log_level=log_level)
         self.logger.info("Starting Playwright")
         if self.playwright:
@@ -44,12 +45,12 @@ class Scraper:
         self.desktop_context = await self.browser.new_context(
             **self.playwright.devices["Desktop Chrome HiDPI"],
         )
-        self.logger.info("Scraper initialized successfully")
+        self.logger.info("Crawler initialized successfully")
         return self
 
     async def scrape_into_dataset(self, extra_path: str, url: str) -> None:
         domain = get_domain(url)[1]
-        save_dir = f"datasets/images/{extra_path}"
+        save_dir = f"{IMAGE_PATH}/{extra_path}"
         mobile_path = f"{save_dir}/{domain}_mobile.png"
         desktop_path = f"{save_dir}/{domain}_desktop.png"
 
@@ -104,7 +105,7 @@ class Scraper:
                 await page.close()
         self.pages.clear()
 
-        self.logger.info("Shutting down scraper")
+        self.logger.info("Shutting down Crawler")
         if self.mobile_context:
             await self.mobile_context.close()
         if self.desktop_context:

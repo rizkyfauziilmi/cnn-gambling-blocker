@@ -5,15 +5,15 @@ from tqdm import tqdm
 
 from utils.logger import get_logger
 
-from .constant import GAMBLING_SITES, NON_GAMBLING_SITES
-from .instance import Scraper
+from ..constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
+from ..lib.crawler import Crawler
 
 
 async def main() -> None:
-    logger = get_logger("Scraper.Main", level=DEBUG)
+    logger = get_logger("Scrape.Main", level=DEBUG)
 
-    logger.info("Initializing async scraper")
-    scraper = await Scraper.create(log_level=DEBUG)
+    logger.info("Initializing async crawler")
+    crawler = await Crawler.create(log_level=DEBUG)
 
     # --------------------------------------------------
     # Validate input, check for duplicates (throw error if any)
@@ -23,7 +23,7 @@ async def main() -> None:
         count = all_list.count(site)
         if count > 1:
             logger.error("Duplicate URLs found: %s site", site)
-            await scraper.close()
+            await crawler.close()
             raise ValueError(f"Duplicate site found: {site} (count={count})")
 
     async def scrape_group(extra_path: str, sites: list[str], desc: str, concurrency: int = 3) -> None:
@@ -36,7 +36,7 @@ async def main() -> None:
 
         async def run_one(u: str):
             async with sem:
-                await scraper.scrape_into_dataset(extra_path, u)
+                await crawler.scrape_into_dataset(extra_path, u)
 
         tasks = [asyncio.create_task(run_one(u)) for u in sites]
         with tqdm(total=len(sites), desc=desc, unit="site") as pbar:
@@ -55,7 +55,7 @@ async def main() -> None:
         await scrape_group("gambling", GAMBLING_SITES, "Scraping gambling sites")
         logger.info("Scraping job completed successfully")
     finally:
-        await scraper.close()
+        await crawler.close()
 
 
 if __name__ == "__main__":
