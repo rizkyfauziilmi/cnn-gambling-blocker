@@ -54,14 +54,6 @@ class Crawler:
         mobile_path = f"{save_dir}/{domain}_mobile.png"
         desktop_path = f"{save_dir}/{domain}_desktop.png"
 
-        if os.path.exists(mobile_path) and os.path.exists(desktop_path):
-            self.logger.info(
-                "[%s] Skipping scrape (already exists): %s",
-                url,
-                domain,
-            )
-            return
-
         self.logger.info("[%s] Starting scrape", url)
 
         if not self.mobile_context or not self.desktop_context:

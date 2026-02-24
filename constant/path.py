@@ -1,3 +1,6 @@
 IMAGE_PATH = "dataset/images"
 GAMBLING_IMAGE_PATH = f"{IMAGE_PATH}/gambling"
 NON_GAMBLING_IMAGE_PATH = f"{IMAGE_PATH}/non_gambling"
+TEXT_PATH = "dataset/texts"
+GAMBLING_TEXT_PATH = f"{TEXT_PATH}/gambling"
+NON_GAMBLING_TEXT_PATH = f"{TEXT_PATH}/non_gambling"

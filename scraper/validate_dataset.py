@@ -1,11 +1,10 @@
 import os
 from logging import INFO, Logger
 
+from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
 from constant.path import GAMBLING_IMAGE_PATH, NON_GAMBLING_IMAGE_PATH
 from utils.logger import get_logger
 from utils.url import get_domain
-
-from ..constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
 
 
 def check_duplicates(sites: list[str], logger: Logger) -> None:

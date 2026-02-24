@@ -1,12 +1,15 @@
 import asyncio
+import os
 from logging import DEBUG
 
 from tqdm import tqdm
 
+from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
+from constant.path import IMAGE_PATH, TEXT_PATH
+from lib.crawler import Crawler
+from lib.ocr import OCR
 from utils.logger import get_logger
-
-from ..constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
-from ..lib.crawler import Crawler
+from utils.url import get_domain
 
 
 async def main() -> None:
@@ -14,6 +17,9 @@ async def main() -> None:
 
     logger.info("Initializing async crawler")
     crawler = await Crawler.create(log_level=DEBUG)
+
+    logger.info("Initializing OCR")
+    ocr = OCR()
 
     # --------------------------------------------------
     # Validate input, check for duplicates (throw error if any)
@@ -26,7 +32,7 @@ async def main() -> None:
             await crawler.close()
             raise ValueError(f"Duplicate site found: {site} (count={count})")
 
-    async def scrape_group(extra_path: str, sites: list[str], desc: str, concurrency: int = 3) -> None:
+    async def scrape_group(extra_path: str, sites: list[str], desc: str, ocr: OCR, concurrency: int = 3) -> None:
         logger.info(
             "Starting %s (%d sites)",
             desc.lower(),
@@ -36,7 +42,38 @@ async def main() -> None:
 
         async def run_one(u: str):
             async with sem:
-                await crawler.scrape_into_dataset(extra_path, u)
+                domain = get_domain(u)[1]
+                save_dir = f"{IMAGE_PATH}/{extra_path}"
+                mobile_path = f"{save_dir}/{domain}_mobile.png"
+                desktop_path = f"{save_dir}/{domain}_desktop.png"
+
+                text_save_dir = f"{TEXT_PATH}/{extra_path}"
+                os.makedirs(text_save_dir, exist_ok=True)
+                mobile_text_path = f"{text_save_dir}/{domain}_mobile.txt"
+                desktop_text_path = f"{text_save_dir}/{domain}_desktop.txt"
+
+                images_exist = os.path.exists(mobile_path) and os.path.exists(desktop_path)
+                texts_exist = os.path.exists(mobile_text_path) and os.path.exists(desktop_text_path)
+
+                if images_exist and texts_exist:
+                    logger.info("Skipping %s (already exists)", u)
+                    return
+
+                if not images_exist:
+                    await crawler.scrape_into_dataset(extra_path, u)
+
+                if not texts_exist:
+                    logger.debug("Performing OCR on %s mobile", u)
+                    mobile_text = ocr.read_text(mobile_path)
+                    with open(mobile_text_path, "w", encoding="utf-8") as f:
+                        f.write(mobile_text)
+
+                    logger.debug("Performing OCR on %s desktop", u)
+                    desktop_text = ocr.read_text(desktop_path)
+                    with open(desktop_text_path, "w", encoding="utf-8") as f:
+                        f.write(desktop_text)
+
+                    logger.info("Texts saved for %s", u)
 
         tasks = [asyncio.create_task(run_one(u)) for u in sites]
         with tqdm(total=len(sites), desc=desc, unit="site") as pbar:
@@ -51,8 +88,8 @@ async def main() -> None:
         logger.info("Finished %s", desc.lower())
 
     try:
-        await scrape_group("non_gambling", NON_GAMBLING_SITES, "Scraping non-gambling sites")
-        await scrape_group("gambling", GAMBLING_SITES, "Scraping gambling sites")
+        await scrape_group("non_gambling", NON_GAMBLING_SITES, "Scraping non-gambling sites", ocr)
+        await scrape_group("gambling", GAMBLING_SITES, "Scraping gambling sites", ocr)
         logger.info("Scraping job completed successfully")
     finally:
         await crawler.close()

@@ -1,8 +1,7 @@
 from logging import INFO
 
+from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
 from utils.logger import get_logger
-
-from ..constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
 
 logger = get_logger("Create.TXT.Files", level=INFO)
 
