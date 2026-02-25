@@ -2,7 +2,7 @@ import os
 from logging import INFO, Logger
 
 from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
-from constant.path import GAMBLING_IMAGE_PATH, NON_GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, NON_GAMBLING_TEXT_PATH
+from constant.path import GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, NON_GAMBLING_IMAGE_PATH, NON_GAMBLING_TEXT_PATH
 from utils.logger import get_logger
 from utils.url import get_domain
 
@@ -70,7 +70,7 @@ def main() -> None:
     check_unexpected_files(NON_GAMBLING_TEXT_PATH, expected_non_gambling_text_files, logger)
 
     logger.info(
-        f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total image files checked: {len(expected_gambling_image_files) + len(expected_non_gambling_image_files)}. Total text files checked: {len(expected_gambling_text_files) + len(expected_non_gambling_text_files)}."
+        f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total image files checked: {len(expected_gambling_image_files) + len(expected_non_gambling_image_files)}. Total text files checked: {len(expected_gambling_text_files) + len(expected_non_gambling_text_files)}."  # noqa: E501
     )
 
 
