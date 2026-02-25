@@ -2,7 +2,7 @@ import os
 from logging import INFO, Logger
 
 from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
-from constant.path import GAMBLING_IMAGE_PATH, NON_GAMBLING_IMAGE_PATH
+from constant.path import GAMBLING_IMAGE_PATH, NON_GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, NON_GAMBLING_TEXT_PATH
 from utils.logger import get_logger
 from utils.url import get_domain
 
@@ -18,19 +18,23 @@ def check_duplicates(sites: list[str], logger: Logger) -> None:
     logger.info("No duplicate URLs found in constant lists")
 
 
-def check_file_existence(sites: list[str], directory: str, logger: Logger) -> None:
-    logger.info(f"Checking for dataset file existence in {directory}")
+def check_file_existence(sites: list[str], image_directory: str, text_directory: str, logger: Logger) -> None:
+    logger.info(f"Checking for dataset file existence in {image_directory} and {text_directory}")
     for site in sites:
         _, domain = get_domain(site)
-        expected_files = [
-            f"{directory}/{domain}_mobile.png",
-            f"{directory}/{domain}_desktop.png",
+        expected_image_files = [
+            f"{image_directory}/{domain}_mobile.png",
+            f"{image_directory}/{domain}_desktop.png",
         ]
-        for expected_file in expected_files:
+        expected_text_files = [
+            f"{text_directory}/{domain}_mobile.txt",
+            f"{text_directory}/{domain}_desktop.txt",
+        ]
+        for expected_file in expected_image_files + expected_text_files:
             if not os.path.isfile(expected_file):
                 logger.error("Expected dataset file not found: %s", expected_file)
                 raise FileNotFoundError(f"Expected dataset file not found: {expected_file}")
-    logger.info("All expected dataset files are present in %s", directory)
+    logger.info("All expected dataset files are present in %s and %s", image_directory, text_directory)
 
 
 def check_unexpected_files(directory: str, expected_files: set[str], logger: Logger) -> None:
@@ -51,18 +55,22 @@ def main() -> None:
     check_duplicates(NON_GAMBLING_SITES + GAMBLING_SITES, logger)
 
     # Check for dataset file existence
-    check_file_existence(GAMBLING_SITES, f"{GAMBLING_IMAGE_PATH}", logger)
-    check_file_existence(NON_GAMBLING_SITES, f"{NON_GAMBLING_IMAGE_PATH}", logger)
+    check_file_existence(GAMBLING_SITES, GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, logger)
+    check_file_existence(NON_GAMBLING_SITES, NON_GAMBLING_IMAGE_PATH, NON_GAMBLING_TEXT_PATH, logger)
 
     # Check for unexpected dataset files
-    expected_gambling_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
-    expected_non_gambling_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
+    expected_gambling_image_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
+    expected_gambling_text_files = {f"{get_domain(site)[1]}_{suffix}.txt" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
+    expected_non_gambling_image_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
+    expected_non_gambling_text_files = {f"{get_domain(site)[1]}_{suffix}.txt" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
 
-    check_unexpected_files(f"{GAMBLING_IMAGE_PATH}", expected_gambling_files, logger)
-    check_unexpected_files(f"{NON_GAMBLING_IMAGE_PATH}", expected_non_gambling_files, logger)
+    check_unexpected_files(GAMBLING_IMAGE_PATH, expected_gambling_image_files, logger)
+    check_unexpected_files(GAMBLING_TEXT_PATH, expected_gambling_text_files, logger)
+    check_unexpected_files(NON_GAMBLING_IMAGE_PATH, expected_non_gambling_image_files, logger)
+    check_unexpected_files(NON_GAMBLING_TEXT_PATH, expected_non_gambling_text_files, logger)
 
     logger.info(
-        f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total files checked: {len(expected_gambling_files) + len(expected_non_gambling_files)}."  # noqa: E501
+        f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total image files checked: {len(expected_gambling_image_files) + len(expected_non_gambling_image_files)}. Total text files checked: {len(expected_gambling_text_files) + len(expected_non_gambling_text_files)}."
     )
 
 
