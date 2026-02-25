@@ -2,7 +2,8 @@ import os
 import re
 from logging import INFO, Logger
 
-from scraper.constant import KNOWN_SLDS
+from constant.path import GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, NON_GAMBLING_IMAGE_PATH, NON_GAMBLING_TEXT_PATH
+from constant.slds import KNOWN_SLDS
 from utils.logger import get_logger
 
 
@@ -187,6 +188,8 @@ if __name__ == "__main__":
     logger = get_logger("Format.Dataset", level=INFO)
 
     logger.info("Starting dataset filename formatting...")
-    batch_rename_files("datasets/gambling", logger, remove_subdomains=False)
-    batch_rename_files("datasets/non_gambling", logger, remove_subdomains=False)
+    batch_rename_files(f"{GAMBLING_IMAGE_PATH}", logger, remove_subdomains=False)
+    batch_rename_files(f"{NON_GAMBLING_IMAGE_PATH}", logger, remove_subdomains=False)
+    batch_rename_files(f"{GAMBLING_TEXT_PATH}", logger, remove_subdomains=False)
+    batch_rename_files(f"{NON_GAMBLING_TEXT_PATH}", logger, remove_subdomains=False)
     logger.info("Dataset filename formatting completed.")

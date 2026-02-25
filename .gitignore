@@ -13,7 +13,7 @@ wheels/
 *.txt
 
 # Data files
-datasets
+dataset
 
 # IDE files
 app.log
