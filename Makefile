@@ -3,6 +3,7 @@
 help:
 	@echo "Available commands:"
 	@echo "  make scrape-dataset - Run the scraper to generate dataset"
+	@echo "  make generate-master-dataset - Generate the master dataset CSV"
 	@echo "  make validate-dataset - Validate the generated dataset"
 	@echo "  make format-dataset   - Format dataset filenames"
 	@echo "  make generate-txt   - Generate dataset text files"
@@ -15,6 +16,8 @@ help:
 
 scrape-dataset:
 	uv run python -m scraper.scrape
+generate-master-dataset:
+	uv run python -m scraper.generate_master_dataset
 validate-dataset:
 	uv run python -m scraper.validate_dataset
 format-dataset:
