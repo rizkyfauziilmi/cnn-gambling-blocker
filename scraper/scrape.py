@@ -61,12 +61,12 @@ async def main() -> None:
 
                 if not texts_exist:
                     logger.debug("Performing OCR on %s mobile", u)
-                    mobile_text = ocr.read_text(image_path=mobile_path, label=extra_path, min_conf=0.5 if isGambling else 0.65)
+                    mobile_text = ocr.read_text(image_path=mobile_path, label=extra_path, min_conf=0.5 if isGambling else 0.75)
                     with open(mobile_text_path, "w", encoding="utf-8") as f:
                         f.write(mobile_text)
 
                     logger.debug("Performing OCR on %s desktop", u)
-                    desktop_text = ocr.read_text(image_path=desktop_path, label=extra_path, min_conf=0.5 if isGambling else 0.65)
+                    desktop_text = ocr.read_text(image_path=desktop_path, label=extra_path, min_conf=0.5 if isGambling else 0.75)
                     with open(desktop_text_path, "w", encoding="utf-8") as f:
                         f.write(desktop_text)
 

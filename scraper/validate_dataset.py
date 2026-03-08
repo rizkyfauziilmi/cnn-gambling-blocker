@@ -1,77 +1,129 @@
+import csv
 import os
+from collections import Counter
 from logging import INFO, Logger
 
 from constant.link import GAMBLING_SITES, NON_GAMBLING_SITES
-from constant.path import GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, NON_GAMBLING_IMAGE_PATH, NON_GAMBLING_TEXT_PATH
+from constant.path import (
+    GAMBLING_IMAGE_PATH,
+    GAMBLING_TEXT_PATH,
+    MASTER_DATASET_PATH,
+    NON_GAMBLING_IMAGE_PATH,
+    NON_GAMBLING_TEXT_PATH,
+)
 from utils.logger import get_logger
 from utils.url import get_domain
 
 
-def check_duplicates(sites: list[str], logger: Logger) -> None:
-    logger.info("Checking for duplicate URLs in constant lists")
-    all_list = sites
-    for site in all_list:
-        count = all_list.count(site)
-        if count > 1:
-            logger.error("Duplicate URLs found: %s site", site)
-            raise ValueError(f"Duplicate site found: {site} (count={count})")
-    logger.info("No duplicate URLs found in constant lists")
+def check_duplicates(sites: list[str], logger: Logger):
+    logger.info("Checking duplicate URLs")
+
+    duplicates = [s for s, c in Counter(sites).items() if c > 1]
+
+    if duplicates:
+        raise ValueError(f"Duplicate URLs detected: {duplicates}")
+
+    logger.info("No duplicate URLs found")
 
 
-def check_file_existence(sites: list[str], image_directory: str, text_directory: str, logger: Logger) -> None:
-    logger.info(f"Checking for dataset file existence in {image_directory} and {text_directory}")
+def check_domain_collision(sites: list[str], logger: Logger):
+    logger.info("Checking domain collisions")
+
+    domains = [get_domain(site)[1] for site in sites]
+
+    duplicates = [d for d, c in Counter(domains).items() if c > 1]
+
+    if duplicates:
+        raise ValueError(f"Duplicate domains after normalization: {duplicates}")
+
+    logger.info("No domain collisions detected")
+
+
+def check_file_existence(sites: list[str], image_directory: str, text_directory: str, logger: Logger):
+    logger.info("Checking dataset files")
+
+    missing = []
+
     for site in sites:
         _, domain = get_domain(site)
-        expected_image_files = [
+
+        expected_files = [
             f"{image_directory}/{domain}_mobile.png",
             f"{image_directory}/{domain}_desktop.png",
-        ]
-        expected_text_files = [
             f"{text_directory}/{domain}_mobile.txt",
             f"{text_directory}/{domain}_desktop.txt",
         ]
-        for expected_file in expected_image_files + expected_text_files:
-            if not os.path.isfile(expected_file):
-                logger.error("Expected dataset file not found: %s", expected_file)
-                raise FileNotFoundError(f"Expected dataset file not found: {expected_file}")
-    logger.info("All expected dataset files are present in %s and %s", image_directory, text_directory)
+
+        for file in expected_files:
+            if not os.path.isfile(file):
+                missing.append(file)
+
+    if missing:
+        for f in missing:
+            logger.error("Missing file: %s", f)
+        raise FileNotFoundError("Dataset files missing")
+
+    logger.info("All expected files exist")
 
 
-def check_unexpected_files(directory: str, expected_files: set[str], logger: Logger) -> None:
-    logger.info(f"Checking for unexpected dataset files in {directory}")
-    if os.path.isdir(directory):
-        for file in os.listdir(directory):
-            if file not in expected_files:
-                logger.warning("Unexpected file found in %s: %s", directory, file)
-    logger.info("There are no unexpected dataset files in %s", directory)
+def validate_master_dataset_csv(logger: Logger):
+    logger.info("Validating master_dataset.csv")
+
+    if not os.path.isfile(MASTER_DATASET_PATH):
+        raise FileNotFoundError("master_dataset.csv missing")
+
+    expected_rows = (len(GAMBLING_SITES) + len(NON_GAMBLING_SITES)) * 2
+
+    ids = set()
+    missing_files = []
+
+    with open(MASTER_DATASET_PATH, encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    if len(rows) != expected_rows:
+        raise ValueError(f"CSV row mismatch: expected {expected_rows}, got {len(rows)}")
+
+    for row in rows:
+        data_id = row["data_id"]
+
+        if data_id in ids:
+            raise ValueError(f"Duplicate data_id: {data_id}")
+
+        ids.add(data_id)
+
+        image_path = row["image_path"]
+        text_path = row["text_path"]
+
+        if not os.path.isfile(image_path):
+            missing_files.append(image_path)
+
+        if not os.path.isfile(text_path):
+            missing_files.append(text_path)
+
+    if missing_files:
+        for f in missing_files:
+            logger.error("CSV referenced file missing: %s", f)
+        raise FileNotFoundError("CSV references missing files")
+
+    logger.info("master_dataset.csv validation passed")
 
 
-def main() -> None:
+def main():
     logger = get_logger("Validate.Dataset", level=INFO)
 
-    logger.info("Validating dataset...")
+    logger.info("Starting dataset validation")
 
-    # Check for duplicates
-    check_duplicates(NON_GAMBLING_SITES + GAMBLING_SITES, logger)
+    all_sites = NON_GAMBLING_SITES + GAMBLING_SITES
 
-    # Check for dataset file existence
+    check_duplicates(all_sites, logger)
+    check_domain_collision(all_sites, logger)
+
     check_file_existence(GAMBLING_SITES, GAMBLING_IMAGE_PATH, GAMBLING_TEXT_PATH, logger)
     check_file_existence(NON_GAMBLING_SITES, NON_GAMBLING_IMAGE_PATH, NON_GAMBLING_TEXT_PATH, logger)
 
-    # Check for unexpected dataset files
-    expected_gambling_image_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
-    expected_gambling_text_files = {f"{get_domain(site)[1]}_{suffix}.txt" for site in GAMBLING_SITES for suffix in ["mobile", "desktop"]}
-    expected_non_gambling_image_files = {f"{get_domain(site)[1]}_{suffix}.png" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
-    expected_non_gambling_text_files = {f"{get_domain(site)[1]}_{suffix}.txt" for site in NON_GAMBLING_SITES for suffix in ["mobile", "desktop"]}
+    validate_master_dataset_csv(logger)
 
-    check_unexpected_files(GAMBLING_IMAGE_PATH, expected_gambling_image_files, logger)
-    check_unexpected_files(GAMBLING_TEXT_PATH, expected_gambling_text_files, logger)
-    check_unexpected_files(NON_GAMBLING_IMAGE_PATH, expected_non_gambling_image_files, logger)
-    check_unexpected_files(NON_GAMBLING_TEXT_PATH, expected_non_gambling_text_files, logger)
-
-    logger.info(
-        f"Dataset validation completed successfully. Checked {len(GAMBLING_SITES)} gambling sites and {len(NON_GAMBLING_SITES)} non-gambling sites. Total image files checked: {len(expected_gambling_image_files) + len(expected_non_gambling_image_files)}. Total text files checked: {len(expected_gambling_text_files) + len(expected_non_gambling_text_files)}."  # noqa: E501
-    )
+    logger.info("Dataset validation completed successfully")
 
 
 if __name__ == "__main__":
