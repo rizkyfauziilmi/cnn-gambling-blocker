@@ -1,11 +1,6 @@
 import os
 
-try:
-    # kalau dijalankan dari .py
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-except NameError:
-    # kalau dijalankan dari notebook
-    BASE_DIR = os.getcwd()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
